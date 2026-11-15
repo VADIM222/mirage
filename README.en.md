@@ -4,6 +4,8 @@ Independent Windows desktop automation workspace for Rise of Kingdoms, built wit
 
 [Русский](README.md) · [Language support](docs/languages.md) · [Verification history (Russian)](docs/verification.md)
 
+**Private GitHub:** [VADIM222/mirage](https://github.com/VADIM222/mirage) · [Windows releases](https://github.com/VADIM222/mirage/releases) · [Builds and checks](https://github.com/VADIM222/mirage/actions). Repository access is required to view or download private releases.
+
 ## Run
 
 Launch `Mirage.exe` from the complete Windows release folder. Keep the `_internal` directory beside the executable.
