@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mirage-rok"
+version = "0.1.0"
+description = "Independent memory-first Rise of Kingdoms automation workspace"
+requires-python = ">=3.12"
+dependencies = ["PySide6==6.12.0", "frida==17.26.2", "httpx==0.28.1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pytest-qt>=4.4,<5", "pyinstaller>=6.16,<7"]
+
+[project.scripts]
+mirage = "mirage.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mirage = ["agents/*.js", "assets/*.qss", "assets/*.ps1", "assets/*.html", "assets/*.svg", "locales/*.json", "vendor/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+qt_api = "pyside6"
+addopts = "-ra"

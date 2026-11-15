@@ -1,0 +1,13 @@
+# Общение с героем: свежесть записей
+
+Обновление2026-11-11/PID18181: реально присутствуют герои37/id1,15/id9,66/id10 вместе с записями CityHeroUIMenu; dispawnTime первых1794411237531, героя66/1794432327817 при текущем серверном времени1794405995868. Путь города использует **строковый ключ"17"**: `CityManager.AllObjs["17"]`. Диагностический live_probe переводит цифровой сегмент в int, поэтому его nil для heroList не означал отсутствия героев. Правильная нативная диагностика подтвердила3 объекта. Позиции локальные; SetPosition использует MakeWorldPosFormLocal, положительное сопоставление экрану/диалог ещё не проверены. Это недописанная реализация, а не внешняя недоступность героя. Свидетельства `mirage-hero-final-availability-20261111.json`, `mirage-hero-live-object-and-ui-20261111.json`, `mirage-hero-positions-current-20261111.json`.
+
+2026-11-09, RoK1.1.12.20/PID23282. Пока исследование, сценарий не зарегистрирован.
+
+Ранее `HeroData.CityHeroChatInfo[12]` и `[15]` имели rewarded=false, chatId120101/150111 и dispawnTime1794234443037. Реальный герой15 находился в `CityManager.AllObjs["17"].cityObj.cityheroMgr.heroList[1]`: id1, heroId15, pos{-3,35}. Его UI — `CityHeroUIMenu.uiCitys[198113569].uis[1]`, bobj указывал на тот же объект.
+
+После фактического срока исчезновения таблица CityHeroChatInfo сохранила обе старые записи, но реальный heroList стал пустым (`mirage-hero-chat-after-rotation.json`). Следовательно, rewarded=false само по себе не подтверждает доступного героя. Нужны будущий dispawnTime по серверным часам, текущий живой объект героя и соответствующий UI.
+
+Городская сетка `CityBuildHandler.CITY_GRID_SIZE=0.1`, но преобразование hero.pos в координаты мира ещё не подтверждено. Для продуктового ввода его использовать нельзя. Наблюдавшиеся UI-методы и обработчики не вызывались.
+
+2026-11-11, новый PID3720: CityHeroChatInfo содержит героев12/37 с rewarded=false и будущим dispawnTime1794378761347. В живом heroList[1] найден герой37 (id1, tagName BTHeroCitizen_37, curAction idle, curBehaviorType Behavior_Stroll), pos{-57,31}, тот же dispawnTime. `CityHeroUIMenu` — отдельная глобальная таблица, не часть UIObjectManager. В uiCitys[198113569].uis[1] bobj указывает на тот же живой объект37, isExploreReward=false, progObjOffestY93; progObj — userdata, экранная позиция не прочитана. Возникло положительное состояние для будущего исследования маршрута, но геометрия и общение/получение пока не проверены. Во время наблюдения возврата ресурсов никаких геройских нажатий не делалось. Свидетельства: `mirage-next-modules-state-20261111.json`, `mirage-current-hero-chat-20261111.json`, `mirage-current-hero-world-schema-20261111.json`, `mirage-current-hero-ui-20261111.json`, `mirage-current-hero-ui-fields-20261111.json`.

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mirage Live</title><script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;padding:20px;background:#151618;color:#e7e7e9;font:14px system-ui,sans-serif}h1{font-size:24px;font-weight:600;margin:0 0 4px}small,p{color:#a5a6af}.controls{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}select,button{background:#222326;color:#e7e7e9;border:1px solid #303136;border-radius:6px;padding:10px;max-width:100%}button{background:#dfb47a;color:#211c15}img{width:100%;height:auto;display:block;border-radius:8px;border:1px solid #303136}#status{min-height:2em;overflow-wrap:anywhere}.accent{color:#dfb47a}
+</style></head><body>
+<h1>mirage <span class="accent">Live</span></h1><small>Просмотр экрана · до 1 кадра/с</small>
+<div class="controls"><select id="instance" aria-label="Эмулятор"></select><select id="quality" aria-label="Качество"><option value="low">Экономичный</option><option value="standard" selected>Стандартный</option><option value="original">Оригинал PNG</option></select><button id="pause">Пауза</button></div>
+<p id="status">Подключение…</p><img id="frame" alt="Экран выбранного эмулятора" hidden>
+<script>
+'use strict';
+const app=window.Telegram?.WebApp;app?.ready();app?.expand();
+const instance=document.getElementById('instance'),quality=document.getElementById('quality'),status=document.getElementById('status'),image=document.getElementById('frame');
+let paused=false,previousUrl=null;
+document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').textContent=paused?'Продолжить':'Пауза';};
+async function request(path){const response=await fetch(path,{headers:{'X-Telegram-Init-Data':app?.initData||''},cache:'no-store'});if(!response.ok){const error=await response.json();throw new Error(error.error||'Нет соединения');}return response;}
+async function tick(){try{if(!paused&&!document.hidden&&instance.value){const selected=instance.value;const response=await request('/api/frame?instance='+encodeURIComponent(selected)+'&quality='+quality.value);const blob=await response.blob();if(instance.value===selected){const url=URL.createObjectURL(blob);image.src=url;image.hidden=false;if(previousUrl)URL.revokeObjectURL(previousUrl);previousUrl=url;status.textContent='Обновлено '+new Date().toLocaleTimeString();}}}catch(error){status.textContent=error.message;}finally{setTimeout(tick,1000);}}
+async function start(){try{const response=await request('/api/instances');for(const item of await response.json()){const option=document.createElement('option');option.value=item.id;option.textContent=item.name+(item.power==='online'?'':' · выключен');instance.append(option);}status.textContent=instance.options.length?'Ожидание кадра':'Эмуляторы не найдены';tick();}catch(error){status.textContent=error.message;}}
+instance.onchange=()=>{image.hidden=true;status.textContent='Переключение…';};quality.onchange=()=>{status.textContent='Изменение качества…';};start();
+</script></body></html>

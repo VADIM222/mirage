@@ -1,0 +1,68 @@
+name: Windows RU-EN release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          architecture: x64
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
+      - name: Run tests
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe -m pytest -q
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+      - name: Build Windows package
+        shell: pwsh
+        run: .\tools\build.ps1
+      - name: Audit and smoke both languages
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe tools/audit_package.py build/package-audit.json
+          if ($LASTEXITCODE -ne 0) { throw 'Package audit failed' }
+          .\.venv\Scripts\python.exe tools/smoke_languages.py build/language-smoke
+          if ($LASTEXITCODE -ne 0) { throw 'Language smoke failed' }
+      - name: Archive release
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/Mirage -DestinationPath build/Mirage-Windows-ru-en.zip
+          $hash = (Get-FileHash build/Mirage-Windows-ru-en.zip -Algorithm SHA256).Hash
+          "$hash  Mirage-Windows-ru-en.zip" | Set-Content build/SHA256SUMS.txt -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mirage-Windows-ru-en
+          path: |
+            build/Mirage-Windows-ru-en.zip
+            build/SHA256SUMS.txt
+            build/package-audit.json
+          retention-days: 7
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$env:GITHUB_REF_NAME" build/Mirage-Windows-ru-en.zip build/SHA256SUMS.txt --verify-tag --repo "$env:GITHUB_REPOSITORY" --title "Mirage $env:GITHUB_REF_NAME" --notes-file docs/release-ru-en.md
+          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed' }
